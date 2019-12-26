@@ -10,6 +10,8 @@
 	Created by Emmet on Friday, January 24, 2014.
 
 	Updated by Southclaws 2017-10-13 to add include guard.
+	Updated by Akshay Mohan "ParK_iY" on 2017-05-15 with few code optimization.
+	Updated by Aktah (Leaks) fix few code for new sampctl version
 */
 
 #if defined _easyDialog_included
@@ -31,12 +33,16 @@
 #define Dialog_Opened(%0) \
 	(CallRemoteFunction("Dialog_IsOpened", "i", (%0)))
 
+#if !defined EASYDIALOG_SANITIZE_INPUT
+	#define     EASYDIALOG_SANITIZE_INPUT       1
+#endif
+
 static
 	s_DialogName[MAX_PLAYERS][32 char],
-	bool: s_DialogOpened[MAX_PLAYERS]
+	bool:s_DialogOpened[MAX_PLAYERS]
 ;
 
-forward OnDialogPerformed(playerid, const dialog[], response, success);
+forward OnDialogPerformed(playerid, dialog[], response, success);
 
 forward @dialog_format(); @dialog_format() {
 	format("", 0, "");
@@ -45,7 +51,7 @@ forward @dialog_format(); @dialog_format() {
 forward Dialog_IsOpened(playerid);
 public Dialog_IsOpened(playerid)
 {
-	return (s_DialogOpened[playerid]);
+	return !!(s_DialogOpened[playerid]);
 }
 
 stock Dialog_Close(playerid)
@@ -63,7 +69,7 @@ stock Dialog_Open(playerid, const function[], style, const caption[], const info
 		args
 	;
 
-	if (!strlen(info))
+	if (info[0] == '\0')
 	{
 		return 0;
 	}
@@ -114,7 +120,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	{
 		s_Public = funcidx("OnDialogPerformed");
 	}
-
+#if EASYDIALOG_SANITIZE_INPUT == 1
 	// Sanitize inputs.
 	for (new i = 0, l = strlen(inputtext); i < l; i ++)
 	{
@@ -123,13 +129,12 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			inputtext[i] = '#';
 		}
 	}
-	
-	if (dialogid == 32700 && strlen(s_DialogName[playerid]) > 0)
+#endif
+	if (dialogid == 32700 && s_DialogName[playerid]{0} != '\0')
 	{
 		new
-			string[40];
+			string[40] = "dialog_";
 
-		strcat(string, "dialog_");
 		strcat(string, s_DialogName[playerid]);
 
 		Dialog_Close(playerid);
